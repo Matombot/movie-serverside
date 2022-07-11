@@ -52,16 +52,14 @@ app.post('/api/signup', async function (req, res) {
                 return Error('wrong password')
                 
                  }
-                //  const { username } = req.body;
-                //  console.log(req.body)
-         
-                //  const token = jwt.sign({
-                //      username
-                //  }, process.env.SECRET_TOKEN);
-                //  res.json({
-                //      data:token,
-                //      message: `this  ${username} is logged in`
-                //  });
+                 
+                const token = jwt.sign({
+                  username:theUser.username
+                 }, process.env.SECRET_TOKEN);
+                res.json({
+                      data:theUser,token,
+                     message: `${username} is logged in`
+                 });
             
         } catch (error) {
             console.log(error);
@@ -131,5 +129,77 @@ app.post('/api/signup', async function (req, res) {
             console.log(error);
         }
     });
+    app.post('/api/movie/:id', async function (req, res) {
+        try {
+            const { username } = req.body
+            const { id } = req.params;
+
+            const thisUser = await db.oneOrNone(`select * from users where username = $1`, [username])
+
+            if (!thisUser) {
+                console.log('')
+            } else {
+                await db.none(`insert into user_playlist (users_id, movie_list) values ($1, $2)`, [thisUser.id, id])
+
+                res.status(200).json({
+                    thisUser,
+                    message: 'A movie added into the playlist'
+                    
+                })
+            }
+
+        } catch (error) {
+            console.error(error.message);
+        }
+    })
+
+    app.get('/api/playlist/:username', async function (req, res) {
+        try {
+
+            const { username } = req.params
+
+            const thisUser = await db.oneOrNone(`SELECT * FROM users WHERE username = $1`, [username])
+            
+            if (!thisUser) {
+                console.log('empty')
+            }
+
+            const movieIds = await db.manyOrNone(`SELECT * FROM user_playlist WHERE users_id = $1`, [thisUser.id]);
+
+            const moviesPromises = movieIds.map(async (movie) => {
+                return await getMovieById(movie.movie_list)
+            })
+
+            const movies = await Promise.all(moviesPromises)
+
+            res.json({
+                thisUser: thisUser,
+                data: movies,
+            })
+        } catch(error) {
+            console.log(error)
+            res.status(500).json({
+               error: e.message
+            })
+        }
+    })
+    app.delete('/api/playlist:id', async function (req, res, next) {
+        
+            try {
+                const { id } = req.params
+                const remove = await db.none(`delete from user_playlist WHERE user_id = $1 and movie_list = $2`, [id, movie_list]);
+                res.json({
+                    status: 'movie deleted',
+                    data:remove
+                })
+            } catch (error) {
+                res.json({
+                    status: 'success',
+                    error: err.stack
+                })
+            }
+        
+    });
+
 
 }
