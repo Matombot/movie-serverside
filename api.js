@@ -139,11 +139,11 @@ app.post('/api/signup', async function (req, res) {
             if (!thisUser) {
                 console.log('')
             } else {
-                await db.none(`insert into user_playlist (users_id, movie_list) values ($1, $2)`, [thisUser.id, id])
+                await db.none(`insert into user_playlist (users_id, movie_list) values ($1, $2)`, [thisUser.id, movie_list])
 
                 res.status(200).json({
                     thisUser,
-                    message: 'A movie added into the playlist'
+                    message: 'A movie is added into the playlist'
                     
                 })
             }
@@ -161,25 +161,21 @@ app.post('/api/signup', async function (req, res) {
             const thisUser = await db.oneOrNone(`SELECT * FROM users WHERE username = $1`, [username])
             
             if (!thisUser) {
-                console.log('empty')
+                console.log('')
             }
 
-            const movieIds = await db.manyOrNone(`SELECT * FROM user_playlist WHERE users_id = $1`, [thisUser.id]);
+            const movie_id = await db.manyOrNone(`SELECT * FROM user_playlist WHERE users_id = $1`, [thisUser.id]);
 
-            const moviesPromises = movieIds.map(async (movie) => {
-                return await getMovieById(movie.movie_list)
-            })
-
-            const movies = await Promise.all(moviesPromises)
+           
 
             res.json({
                 thisUser: thisUser,
-                data: movies,
+                data: movie_id,
             })
         } catch(error) {
             console.log(error)
             res.status(500).json({
-               error: e.message
+               error: error.message
             })
         }
     })
